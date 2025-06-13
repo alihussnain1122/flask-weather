@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Weather App</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      transition: background 0.4s ease;
+    }
+
+    .weather-icon {
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .info-card {
+      transition: all 0.2s ease;
+    }
+
+    .info-card:hover {
+      transform: scale(1.03);
+      background: #eff6ff;
+    }
+
+    .theme-clear { background: linear-gradient(135deg, #e0f2fe 0%, #7dd3fc 100%); }
+    .theme-rain { background: linear-gradient(135deg, #cbd5e1, #64748b); }
+    .theme-clouds { background: linear-gradient(135deg, #f1f5f9, #cbd5e1); }
+    .theme-snow { background: linear-gradient(135deg, #e0f7fa, #b2ebf2); }
+    .theme-thunderstorm { background: linear-gradient(135deg, #94a3b8, #1e293b); color: white; }
+    .theme-drizzle { background: linear-gradient(135deg, #dbeafe, #60a5fa); }
+    .theme-mist, .theme-haze, .theme-smoke { background: linear-gradient(135deg, #d1d5db, #9ca3af); }
+  </style>
+</head>
+
+<body class="min-h-screen transition-all duration-300 {% if weather_type %}theme-{{ weather_type }}{% else %}theme-clear{% endif %}">
+  <div class="container mx-auto px-4 py-12 min-h-screen flex flex-col justify-start">
+
+    <!-- Header -->
+    <header class="text-center mb-10">
+      <h1 class="text-5xl font-extrabold text-blue-800 drop-shadow-sm tracking-tight">Weather App</h1>
+      <form class="mt-8 flex flex-col sm:flex-row justify-center gap-4 max-w-lg mx-auto" method="POST">
+        <input 
+          type="text" 
+          name="city" 
+          id="city-input"
+          placeholder="Enter city name" 
+          class="px-6 py-3 w-full sm:w-2/3 rounded-xl border border-blue-300 bg-white/60 backdrop-blur-md shadow-md focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200"
+          required
+        >
+        <div class="flex gap-2">
+          <button 
+            type="submit" 
+            class="px-6 py-3 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold shadow-lg hover:from-indigo-600 hover:to-blue-700 transition-all duration-200"
+          >
+            <i class="fas fa-search mr-2"></i> Search
+          </button>
+          <button 
+            type="button" 
+            onclick="getLocation()" 
+            title="Use my location"
+            class="px-4 py-3 rounded-xl bg-gradient-to-r from-blue-400 to-sky-500 text-white font-semibold shadow-md hover:from-sky-500 hover:to-blue-500 transition"
+          >
+            <i class="fas fa-location-crosshairs"></i>
+          </button>
+        </div>
+      </form>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1">
+      {% if error_message %}
+      <div class="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-lg max-w-md mx-auto shadow">
+        <p>{{ error_message }}</p>
+      </div>
+      {% endif %}
+
+      {% if weather %}
+      <div class="bg-white/80 backdrop-blur-lg rounded-3xl shadow-2xl p-10 max-w-4xl mx-auto grid md:grid-cols-2 gap-8">
+        <!-- Weather Overview -->
+        <div class="flex flex-col items-center text-center">
+          <img 
+            src="http://openweathermap.org/img/wn/{{ weather.icon }}@4x.png" 
+            alt="Weather icon" 
+            class="w-36 h-36 mb-4 weather-icon animate-bounce"
+          >
+          <h2 class="text-4xl font-bold text-gray-800 mb-2">{{ weather.city }}, {{ weather.country }}</h2>
+          <p class="text-gray-600 text-lg capitalize">{{ weather.description }}</p>
+          <p class="text-6xl font-extrabold mt-4 text-blue-700">{{ weather.temperature }}°C</p>
+          <p class="text-gray-500 mt-2">Feels like {{ weather.feels_like }}°C</p>
+        </div>
+
+        <!-- Detailed Info -->
+        <div class="grid grid-cols-2 gap-6 text-center">
+          <div class="bg-blue-50 p-4 rounded-2xl shadow info-card">
+            <p class="text-sm text-gray-600">Humidity</p>
+            <p class="text-2xl font-bold text-blue-900">{{ weather.humidity }}%</p>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-2xl shadow info-card">
+            <p class="text-sm text-gray-600">Wind</p>
+            <p class="text-2xl font-bold text-blue-900">{{ weather.wind_speed }} km/h</p>
+            <p class="text-xs text-gray-500">{{ weather.wind_direction }}</p>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-2xl shadow info-card">
+            <p class="text-sm text-gray-600">Pressure</p>
+            <p class="text-2xl font-bold text-blue-900">{{ weather.pressure }} hPa</p>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-2xl shadow info-card">
+            <p class="text-sm text-gray-600">Visibility</p>
+            <p class="text-2xl font-bold text-blue-900">{{ weather.visibility }} km</p>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-2xl shadow info-card col-span-1">
+            <p class="text-sm text-gray-600">Sunrise</p>
+            <p class="text-2xl font-bold text-orange-600">{{ weather.sunrise }}</p>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-2xl shadow info-card col-span-1">
+            <p class="text-sm text-gray-600">Sunset</p>
+            <p class="text-2xl font-bold text-purple-600">{{ weather.sunset }}</p>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-2xl shadow info-card col-span-1">
+            <p class="text-sm text-gray-600">Min Temp</p>
+            <p class="text-2xl font-bold text-cyan-700">{{ weather.temp_min }}°C</p>
+          </div>
+          <div class="bg-blue-50 p-4 rounded-2xl shadow info-card col-span-1">
+            <p class="text-sm text-gray-600">Max Temp</p>
+            <p class="text-2xl font-bold text-red-700">{{ weather.temp_max }}°C</p>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="flex items-center justify-center mt-20">
+        <div class="text-center">
+          <i class="fas fa-cloud-sun text-8xl text-blue-400 mb-6 animate-pulse"></i>
+          <h2 class="text-4xl font-bold text-gray-700 mb-2">Weather App</h2>
+          <p class="text-gray-500 text-lg">Enter a city name above to get real-time weather information.</p>
+        </div>
+      </div>
+      {% endif %}
+    </main>
+  </div>
+
+  <!-- 📍 Geolocation Script -->
+  <script>
+    function getLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(success, error);
+      } else {
+        alert("Geolocation not supported by this browser.");
+      }
+    }
+
+    function success(position) {
+      const lat = position.coords.latitude;
+      const lon = position.coords.longitude;
+
+      fetch(`/weather-by-coords?lat=${lat}&lon=${lon}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.city) {
+            document.getElementById("city-input").value = data.city;
+          } else {
+            alert("Unable to find city from your location.");
+          }
+        }).catch(() => alert("Failed to get weather by coordinates."));
+    }
+
+    function error(err) {
+      alert("Location access denied or failed.");
+    }
+  </script>
+</body>
+</html>
